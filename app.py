@@ -16,17 +16,32 @@ class Worker(QObject):
     def __init__(self, player_hash: str):
         super(Worker, self).__init__()
         self.pawn_counter = PawnCounter(player_hash)
+        self.player_number = self.pawn_counter.get_player_number()
+
 
     def run(self) -> None:
 
         last_pl_0_set = None
         last_pl_1_set = None
+
         while True:
-            pl_0_set, pl_1_set = self.pawn_counter.get_player_sets()
+
+            pl_0_set, pl_1_set = self.pawn_counter.get_players_sets()
+
             if pl_0_set != last_pl_0_set or pl_1_set != last_pl_1_set:
-                self.progress.emit((pl_1_set, pl_0_set))
+                # check if sets differ from the last ones, to not emit them to App unnecessarily
+
+                # depending on player_number emit pl_0_set firstly and pl_1_set then or conversely
+                # so the app gets the user's set firstly and the opponent's set then
+                if self.player_number == 0:
+                    self.progress.emit((pl_0_set, pl_1_set))
+
+                elif self.player_number == 1:
+                    self.progress.emit((pl_1_set, pl_0_set))
+
                 last_pl_0_set = pl_0_set.copy()
                 last_pl_1_set = pl_1_set.copy()
+
             sleep(1)
 
 
@@ -103,23 +118,23 @@ class App(QtWidgets.QMainWindow):
         """
 
         # label and input field for the user's name
-        self.label_0_pl_name = QtWidgets.QLabel()
-        self.label_0_pl_name.setText("Your name: ")
-        self.input_0_pl_name = QtWidgets.QLineEdit()
-        self.input_0_pl_name.setFrame(False)
+        self.label_pl_user_name = QtWidgets.QLabel()
+        self.label_pl_user_name.setText("Your name: ")
+        self.input_pl_user_name = QtWidgets.QLineEdit()
+        self.input_pl_user_name.setFrame(False)
 
         # label and input field for the user's opponent name
-        self.label_1_pl_name = QtWidgets.QLabel()
-        self.label_1_pl_name.setText("Your opponent's name: ")
-        self.input_1_pl_name = QtWidgets.QLineEdit()
-        self.input_1_pl_name.setFrame(False)
+        self.label_pl_opponent_name = QtWidgets.QLabel()
+        self.label_pl_opponent_name.setText("Your opponent's name: ")
+        self.input_pl_opponent_name = QtWidgets.QLineEdit()
+        self.input_pl_opponent_name.setFrame(False)
 
         # layout
         self.players_layout = QtWidgets.QGridLayout(self.middle_frame)
-        self.players_layout.addWidget(self.label_0_pl_name, 0, 0)
-        self.players_layout.addWidget(self.input_0_pl_name, 0, 1)
-        self.players_layout.addWidget(self.label_1_pl_name, 1, 0)
-        self.players_layout.addWidget(self.input_1_pl_name, 1, 1)
+        self.players_layout.addWidget(self.label_pl_user_name, 0, 0)
+        self.players_layout.addWidget(self.input_pl_user_name, 0, 1)
+        self.players_layout.addWidget(self.label_pl_opponent_name, 1, 0)
+        self.players_layout.addWidget(self.input_pl_opponent_name, 1, 1)
 
 
     def init_table_ui(self) -> None:
@@ -166,19 +181,19 @@ class App(QtWidgets.QMainWindow):
             self.table.setCellWidget(i, 1, cell_item_1)
             i += 1
 
-        pl_0 = DEFAULT_PLAYER_SET.copy()
-        pl_1 = DEFAULT_PLAYER_SET.copy()
-        self.last_player_sets_tuple = (pl_0, pl_1)
+        pl_user = DEFAULT_PLAYER_SET.copy()
+        pl_opponent = DEFAULT_PLAYER_SET.copy()
+        self.last_player_sets_tuple = (pl_user, pl_opponent)
 
 
     def submit(self) -> None:
         """
         Changes graphical view of the table and run long running task.
         """
-
         player_hash = self.input_field.text()
-        user_name = self.input_0_pl_name.text()
-        opponent_name = self.input_1_pl_name.text()
+        user_name = self.input_pl_user_name.text()
+        opponent_name = self.input_pl_opponent_name.text()
+
 
         # main window graphical settings
         self.input_field.hide()

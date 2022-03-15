@@ -13,7 +13,8 @@ class PawnCounter:
 
     def __init__(self, player_hash: str):
 
-        # player_0 is the user of the application and player_1 is their opponent
+        # player_0 is the one how has initialized a game - sent a link
+        # player_1 is the other one who has joined
         self.player_0_set = DEFAULT_PLAYER_SET.copy()
         self.player_1_set = DEFAULT_PLAYER_SET.copy()
 
@@ -21,25 +22,34 @@ class PawnCounter:
         self.last_essential_data = ""
 
 
-    def get_player_sets(self) -> Tuple[dict, dict]:
+    def get_player_number(self):
         """
-        Return updated players' pawn sets.
+        From request gets player number (0 or 1)
         """
+        request_text = self.get_data(self.player_hash)
+        player_number = request_text["side"]
 
-        self.update()
+        return player_number
+
+
+    def get_players_sets(self)-> Tuple[dict, dict]:
+        """
+        Returns updated players' pawn sets.
+        """
+        try:
+            essential_data = self.get_move_info_from_request()
+        except GameNotStartedError:
+            return
+
+        self.update(essential_data)
 
         return self.player_0_set, self.player_1_set
 
 
-    def update(self) -> None:
+    def update(self, essential_data) -> None:
         """
         Depending on type of the move updates players' pawn sets.
         """
-
-        try:
-            essential_data = self.get_data()
-        except GameNotStartedError:
-            return
 
         if self.last_essential_data == essential_data:
             # pass if got request is about move that have been taken into consideration before
@@ -58,20 +68,27 @@ class PawnCounter:
         self.last_essential_data = essential_data
 
 
-    def get_data(self) -> dict:
+    def get_data(self, player_hash) -> dict:
         """
-        Gets data and returns dictionary with data which is important: type of move, rank
-        and change in position on the board or raises 'GameNotStartedError' if game is not started.
+        Gets data and returns dictionary with entire request.
         """
-
-        data = f"https://www.stratego.io/api/game?player_hash={self.player_hash}"
-        get_request = requests.get(data)
+        url = f"https://www.stratego.io/api/game?player_hash={player_hash}"
+        get_request = requests.get(url)
         get_request_text = json.loads(get_request.text)
 
-        if "last_move" not in get_request_text.keys():
+        return get_request_text
+
+
+    def get_move_info_from_request(self):
+        """
+        From request gets info about move or raises 'GameNotStartedError' if game hasn't started yet.
+        """
+        request_text = self.get_data(self.player_hash)
+
+        if "last_move" not in request_text.keys():
             raise GameNotStartedError()
 
-        return get_request_text["last_move"]
+        return request_text["last_move"]
 
 
     def translate_data(self, pawn_data: dict) -> None:
@@ -112,7 +129,7 @@ class PawnCounter:
             loser_side = won_battle["to"]["piece"]["side"]
             loser_rank = 10
         elif won_battle["from"]["piece"]["rank"] == 3 and won_battle["to"]["piece"]["rank"] == 50:
-            # sapper (3) vs bomb (50) -> loser: bomb (50
+            # sapper (3) vs bomb (50) -> loser: bomb (50)
             loser_side = won_battle["to"]["piece"]["side"]
             loser_rank = 50
 
