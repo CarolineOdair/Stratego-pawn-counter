@@ -1,7 +1,8 @@
-import requests
-import json
 from copy import deepcopy
+import json
+import requests
 from typing import Tuple
+
 from utils import DEFAULT_PLAYER_SET, get_rank_translation
 
 
@@ -36,20 +37,20 @@ class PawnCounter:
         """
         Returns updated players' pawn sets.
         """
-        try:
-            essential_data = self.get_move_info_from_request()
-        except GameNotStartedError:
-            return
-
-        self.update(essential_data)
+        self.update()
 
         return self.player_0_set, self.player_1_set
 
 
-    def update(self, essential_data) -> None:
+    def update(self) -> None:
         """
         Depending on type of the move updates players' pawn sets.
         """
+
+        try:
+            essential_data = self.get_move_info_from_request()
+        except GameNotStartedError:
+            return
 
         if self.last_essential_data == essential_data:
             # pass if got request is about move that have been taken into consideration before

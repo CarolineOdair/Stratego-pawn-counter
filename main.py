@@ -1,6 +1,8 @@
-from sys import argv, exit
-from app import App
 from PyQt5.QtWidgets import QApplication
+
+from sys import argv, exit
+
+from app import App
 from utils import main_style
 
 
