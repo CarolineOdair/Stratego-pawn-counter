@@ -222,10 +222,10 @@ class App(QtWidgets.QMainWindow):
                 row_index += 1
             player_index += 1
 
-        self.update_highlighting(player_sets_tuple)
+        self.find_winner(player_sets_tuple)
 
 
-    def update_highlighting(self, player_sets_tuple: tuple):
+    def find_winner(self, player_sets_tuple: tuple):
         """
         Changes background of cells in a column of a player how have lost (dict item: (100,0)).
 
@@ -233,16 +233,24 @@ class App(QtWidgets.QMainWindow):
             player_sets_tuple - tuple with dictionaries containing current players' pawn number
         """
 
+        players_names = [self.input_pl_user_name.text(), self.input_pl_opponent_name.text()]
         ROW_NUM = self.table.rowCount()
-        i = 0
-        for player_current_set in player_sets_tuple:
-            # loop over players
-            if player_current_set[0] == 0:
-                for row in range(ROW_NUM):
-                    # loop over rows
-                    current_widget = self.table.cellWidget(row, i)
-                    current_widget.setStyleSheet(detailed_style["cell_highlighting"])
-            i += 1
+
+        if player_sets_tuple[0][0] == 0:
+            # print winner's name
+            self.label.setText(f"Winner: {players_names[1]}")
+            for row in range(ROW_NUM):
+                # loop over rows
+                current_widget = self.table.cellWidget(row, 0)
+                current_widget.setStyleSheet(detailed_style["cell_highlighting"])
+
+        elif player_sets_tuple[1][0] == 0:
+            # print winner's name
+            self.label.setText(f"Winner: {players_names[0]}")
+            for row in range(ROW_NUM):
+                # loop over rows
+                current_widget = self.table.cellWidget(row, 1)
+                current_widget.setStyleSheet(detailed_style["cell_highlighting"])
 
 
     def create_cell_widget(self, alive: int, default: int) -> QtWidgets.QFrame:
@@ -261,7 +269,7 @@ class App(QtWidgets.QMainWindow):
         pawn_img_path = "img_pawn.svg"
         empty_img_path = "img_empty.png"
         IMG_NUM = max(DEFAULT_PLAYER_SET.values())
-        OPACITY = 0.4
+        OPACITY = 0.25
 
         frame = QtWidgets.QFrame()
         layout = QtWidgets.QHBoxLayout(frame)
